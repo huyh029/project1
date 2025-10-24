@@ -67,9 +67,7 @@
 
         #result {
             margin: 20px auto;
-            white-space: pre-wrap;
             text-align: left;
-            max-width: 720px;
             background: rgba(255, 255, 255, 0.1);
             padding: 12px 16px;
             border-radius: 12px;
@@ -77,17 +75,59 @@
             color: #000;
             font-size: 14px;
             background-color: white;
-            width: 100%;
+            width: calc(100% - 70px);
         }
 
         .result {
             display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             margin-top: 20px;
         }
     </style>
+    <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#9aa4b2; --accent:#5eead4; --glass:rgba(255,255,255,0.04);
+      --success:#10b981; --danger:#ef4444; --accent-2:#60a5fa;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    }
+    #result *{box-sizing:border-box}
+    #result {margin:0;background:linear-gradient(180deg,#071023 0%,#071428 100%);color:#e6eef7;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px}
+
+    #result .container{width:100%;}
+    #result header{display:flex;align-items:center;gap:16px;}
+    #result .logo{width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent-2));border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#022;box-shadow:0 8px 24px rgba(11,18,32,0.6)}
+    #result h1{font-size:20px;margin:0}
+    #result p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    #result .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:20px;box-shadow:0 6px 20px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+
+    #result .grid{display:grid;grid-template-columns:360px 1fr;gap:18px}
+
+    /* left panel */
+    #result .profile{display:flex;flex-direction:column;gap:14px}
+    #result .face-preview{background:var(--glass);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px;align-items:center}
+    #result .face-rect{width:240px;height:240px;background:linear-gradient(180deg,#0b1220,#071428);border-radius:10px;position:relative;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
+    #result .face-rect .box{position:absolute;border:2px dashed rgba(94,234,212,0.25);width:191px;height:191px;left:10px;top:0;}
+    #result .meta{display:flex;flex-direction:column;gap:6px;width:100%}
+    #result .meta .row{display:flex;justify-content:space-between;font-size:14px;color:var(--muted)}
+
+    /* right panel */
+    #result .details{display:flex;flex-direction:column;gap:14px}
+    #result .section{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px}
+    #result .section h3{margin:0 0 8px 0;font-size:14px}
+
+    #result .emotions .bar{height:12px;background:rgba(255,255,255,0.06);border-radius:8px;overflow:hidden;margin-bottom:10px}
+    #result .emotions .bar > i{display:block;height:100%;border-radius:8px}
+
+    #result .stat-list{display:flex;gap:10px}
+    #result .chip{background:rgba(255,255,255,0.02);padding:8px 10px;border-radius:8px;font-size:13px;color:var(--muted)}
+
+    #result .list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    #result .item{padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);font-size:13px}
+
+    #result footer{margin-top:14px;color:var(--muted);font-size:12px;text-align:right}
+    #result .box{display:none;}
+    @media (max-width:900px){#result .grid{grid-template-columns:1fr;}#result .face-rect{width:100%;height:220px}#result .logo{width:52px;height:52px}}
+  </style>
 </head>
 
 <body>
@@ -117,7 +157,66 @@
       padding: 20px 20px 100px 20px;
     ">
             <div id="result">
+                <div class="container">
 
+      <div>
+        <h1>Kết quả phân tích khuôn mặt</h1><br>
+     </div>
+
+    <div class="card">
+      <div class="grid">
+        <div class="profile">
+          <div class="face-preview">
+            <div class="face-rect" id="faceRect">
+              <div style="text-align:center">
+                <img id="photo1" width="200" alt="Ảnh khuôn mặt sẽ hiện ở đây">
+              </div>
+              <div class="box"></div>
+            </div>
+
+            <div class="meta">
+              <div class="row"><strong>Tuổi ước tính</strong><span id="age">—</span></div>
+              <div class="row"><strong>Cảm xúc chiếm ưu thế</strong><span id="dominant_emotion">—</span></div>
+              <div class="row"><strong>Giới tính chiếm ưu thế</strong><span id="dominant_gender">—</span></div>
+              <div class="row"><strong>Độ tin cậy khuôn mặt</strong><span id="face_confidence">—</span></div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h3>Vùng (region)</h3>
+            <div class="list" id="regionList">
+              <!-- region entries -->
+            </div>
+          </div>
+        </div>
+
+        <div class="details">
+          <div class="section emotions">
+            <h3>Các tỉ lệ cảm xúc</h3>
+            <div id="emotionBars"></div>
+          </div>
+
+          <div class="section">
+            <h3>Phân bố giới tính</h3>
+            <div class="stat-list" id="genderChips"></div>
+          </div>
+
+          <div class="section">
+            <h3>Phân bố chủng tộc</h3>
+            <div id="raceList"></div>
+          </div>
+
+          <div class="section">
+            <h3>Chi tiết JSON (thô)</h3>
+            <pre id="raw" style="white-space:pre-wrap;background:transparent;color:var(--muted);font-size:12px;margin:0;padding:6px;border-radius:6px;">{
+  "result": [ ... ]
+}</pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
             </div>
             <button onclick="analyzeAgain()">Phân tích lại</button>
         </div>
@@ -127,6 +226,39 @@
 
 
     <script>
+        var datafe = {
+      "result": [
+        {
+          "age": 0,
+          "dominant_emotion": "",
+          "dominant_gender": "",
+          "dominant_race": "",
+          "emotion": {
+            "angry": 0,
+            "disgust": 0,
+            "fear": 0,
+            "happy": 0,
+            "neutral": 0,
+            "sad": 0,
+            "surprise": 0
+          },
+          "face_confidence": 0,
+          "gender": {
+            "Man": 0,
+            "Woman": 0
+          },
+          "race": {
+            "asian": 0,
+            "black": 0,
+            "indian": 0,
+            "latino hispanic": 0,
+            "middle eastern": 0,
+            "white": 0
+          },
+          "region": {"h":0,"left_eye":null,"right_eye":null,"w":0,"x":0,"y":0}
+        }
+      ]
+    };
         const video = document.getElementById('video');
         const captureBtn = document.getElementById('captureBtn');
         const analyzeBtn = document.getElementById('analyzeBtn');
@@ -176,6 +308,7 @@
 
             capturedDataURL = faceCanvas.toDataURL('image/png');
             photo.src = capturedDataURL;
+            document.getElementById('photo1').src = capturedDataURL;
             photo.style.display = 'block';
             console.log('📷 Base64 khuôn mặt:', capturedDataURL);
         }
@@ -186,8 +319,8 @@
         analyzeBtn.addEventListener('click', async () => {
             if (!capturedDataURL) { alert('Vui lòng chụp khuôn mặt trước!'); return; }
 
-            resultDiv.innerHTML = '⏳ Đang phân tích...';
-            try {
+           // resultDiv.innerHTML = '⏳ Đang phân tích...';
+
                 const res = await fetch('http://127.0.0.1:5000/api/analyze', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -200,18 +333,71 @@
                 if (data.error) {
                     alert(`❌ Lỗi: ${data.error}`);
                 } else {
-                    resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
-                    document.querySelector('.result').style.display = 'block';
+                     document.querySelector('.result').style.display = 'block';
                     document.querySelector('.analyze').style.display = 'none';
+                    datafe = data;
+                    console.log("Full API response:", datafe);
+                    const item = datafe.result[0];
+                    console.log("Analyzed item:", item);
+    // Basic fields
+    document.getElementById('age').textContent = item.age + ' tuổi';
+    document.getElementById('dominant_emotion').textContent = item.dominant_emotion;
+    document.getElementById('dominant_gender').textContent = item.dominant_gender;
+    document.getElementById('face_confidence').textContent = (item.face_confidence*100).toFixed(0) + '%';
+
+    // Region
+    const regionList = document.getElementById('regionList');
+    for(const k of Object.keys(item.region)){
+      const div = document.createElement('div'); div.className='item'; div.innerHTML = `<strong>${k}</strong><div style="color:var(--muted);">${item.region[k]===null? 'null': item.region[k]}</div>`;
+      regionList.appendChild(div);
+    }
+
+    // Emotions bars
+    const emotionBars = document.getElementById('emotionBars');
+    const emotions = item.emotion;
+    // Normalize to total 100 for visual clarity
+    let total = 0; for(const v of Object.values(emotions)) total += v;
+    const colors = {angry:'#ef4444',disgust:'#6b7280',fear:'#f97316',happy:'#f59e0b',neutral:'#94a3b8',sad:'#3b82f6',surprise:'#a78bfa'};
+    for(const [k,v] of Object.entries(emotions)){
+      const perc = (v/total*100);
+      const row = document.createElement('div');
+      row.style.marginBottom='8px';
+      row.innerHTML = `<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span>${k}</span><span>${perc.toFixed(2)}%</span></div>`;
+      const bar = document.createElement('div'); bar.className='bar';
+      const inner = document.createElement('i'); inner.style.width = perc+'%'; inner.style.background = colors[k]|| '#888'; inner.style.position='relative';
+      // colored left accent
+      const accent = document.createElement('span'); accent.style.position='absolute'; accent.style.left='0'; accent.style.top='0'; accent.style.bottom='0'; accent.style.width='6px'; accent.style.background = colors[k]|| '#888'; accent.style.borderRadius='6px 0 0 6px'; inner.appendChild(accent);
+      bar.appendChild(inner);
+      row.appendChild(bar);
+      emotionBars.appendChild(row);
+    }
+
+    // Gender chips
+    const genderChips = document.getElementById('genderChips');
+    for(const [k,v] of Object.entries(item.gender)){
+      const chip = document.createElement('div'); chip.className='chip'; chip.innerHTML = `<strong>${k}</strong><div style="font-size:12px;color:var(--muted)">${v.toFixed(2)}%</div>`;
+      genderChips.appendChild(chip);
+    }
+
+    // Race list
+    const raceList = document.getElementById('raceList');
+    for(const [k,v] of Object.entries(item.race)){
+      const wrap = document.createElement('div'); wrap.style.marginBottom='8px';
+      wrap.innerHTML = `<div style='display:flex;justify-content:space-between;font-size:13px'><span>${k}</span></div>
+        <div class='bar' style='display:flex;justify-content:space-between;font-size:14px;align-items:center    ;height:10px'><i style='width:${v}%;height:100%;background:#0f0;display:block;border-radius:6px'></i><span>${v.toFixed(2)}%</span></div>`;
+      raceList.appendChild(wrap);
+    }
+
+    // Raw JSON
+    document.getElementById('raw').textContent = JSON.stringify(datafe, null, 2);
+                   
                 }
-            } catch (err) {
-                console.error("Fetch error:", err);
-                alert(`❌ Lỗi: ${err}`);
-            }
         });
         function analyzeAgain() {
             window.location.reload();
         }
+        
+
     </script>
 </body>
 
