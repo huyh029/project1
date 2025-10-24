@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Index Page</title>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Lấy token từ localStorage
+      const token = sessionStorage.getItem("token");
+
+      if (!token) {
+        // Nếu chưa có token → chuyển sang login
+        window.location.href = "login.html";
+      } else {
+        // Nếu có token → chuyển sang home
+        window.location.href = "home.html";
+      }
+    });
+  </script>
+</head>
+<body>
+  <p>Đang kiểm tra phiên đăng nhập...</p>
+</body>
+</html>

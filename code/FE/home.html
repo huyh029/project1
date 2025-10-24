@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Capture & Analyze</title>
+    <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background: linear-gradient(120deg, #a8e063, #56ab2f);
+            color: white;
+            font-family: 'Segoe UI', sans-serif;
+            transition: background 0.5s;
+            overflow: hidden;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        #video {
+            border-radius: 16px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .container {
+            position: relative;
+            display: inline-block;
+            padding: 0;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            background-color: rgba(0, 150, 136, 0.85);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: rgba(0, 150, 136, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        #photo {
+            margin-top: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        #result {
+            margin: 20px auto;
+            white-space: pre-wrap;
+            text-align: left;
+            max-width: 720px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+            color: #000;
+            font-size: 14px;
+            background-color: white;
+            width: 100%;
+        }
+
+        .result {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="width: 100%;
+    height: 100%;
+    overflow: auto;
+    ">
+        <div style="display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 20px 100px 20px;" class="analyze">
+            <h1>🎥 Nhận diện & Phân tích khuôn mặt</h1>
+
+            <div class="container">
+                <video id="video" width="720" height="560" autoplay muted></video>
+            </div>
+
+            <button id="captureBtn">📸 Chụp khuôn mặt (Space)</button>
+            <button id="analyzeBtn">🔍 Phân tích khuôn mặt</button>
+            <img id="photo" width="200" alt="Ảnh khuôn mặt sẽ hiện ở đây">
+        </div>
+        <div class="result" style="
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 20px 100px 20px;
+    ">
+            <div id="result">
+
+            </div>
+            <button onclick="analyzeAgain()">Phân tích lại</button>
+        </div>
+
+    </div>
+
+
+
+    <script>
+        const video = document.getElementById('video');
+        const captureBtn = document.getElementById('captureBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const photo = document.getElementById('photo');
+        const resultDiv = document.getElementById('result');
+
+        let detections = [];
+        let capturedDataURL = null;
+
+        // Load model
+        Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')
+        ]).then(startVideo);
+
+        function startVideo() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => video.srcObject = stream)
+                .catch(err => console.error('Không mở được camera:', err));
+        }
+
+        video.addEventListener('play', () => {
+            const container = document.querySelector('.container');
+            const canvas = faceapi.createCanvasFromMedia(video);
+            container.append(canvas);
+            const displaySize = { width: video.width, height: video.height };
+            faceapi.matchDimensions(canvas, displaySize);
+
+            setInterval(async () => {
+                detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+                const resized = faceapi.resizeResults(detections, displaySize);
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                faceapi.draw.drawDetections(canvas, resized);
+            }, 100);
+        });
+
+        async function captureFace() {
+            if (!detections.length) { alert('Không thấy khuôn mặt nào!'); return; }
+
+            const box = detections[0].box;
+            const { x, y, width, height } = box;
+            const faceCanvas = document.createElement('canvas');
+            const ctx = faceCanvas.getContext('2d');
+            faceCanvas.width = width;
+            faceCanvas.height = height;
+            ctx.drawImage(video, x, y, width, height, 0, 0, width, height);
+
+            capturedDataURL = faceCanvas.toDataURL('image/png');
+            photo.src = capturedDataURL;
+            photo.style.display = 'block';
+            console.log('📷 Base64 khuôn mặt:', capturedDataURL);
+        }
+
+        captureBtn.addEventListener('click', captureFace);
+        window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); captureFace(); } });
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (!capturedDataURL) { alert('Vui lòng chụp khuôn mặt trước!'); return; }
+
+            resultDiv.innerHTML = '⏳ Đang phân tích...';
+            try {
+                const res = await fetch('http://127.0.0.1:5000/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ img: capturedDataURL })
+                });
+                const data = await res.json();
+
+                console.log("Full API response:", data);
+
+                if (data.error) {
+                    alert(`❌ Lỗi: ${data.error}`);
+                } else {
+                    resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    document.querySelector('.result').style.display = 'block';
+                    document.querySelector('.analyze').style.display = 'none';
+                }
+            } catch (err) {
+                console.error("Fetch error:", err);
+                alert(`❌ Lỗi: ${err}`);
+            }
+        });
+        function analyzeAgain() {
+            window.location.reload();
+        }
+    </script>
+</body>
+
+</html>

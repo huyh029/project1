@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register & Capture Face</title>
+<script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>
+  body { margin: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; background: #111; color: white; }
+  .section { margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; width: 90%; max-width: 500px; }
+  input, button { padding: 8px; margin: 5px 0; width: 100%; border-radius: 5px; }
+  #video { border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+  canvas { position: absolute; top: 0; left: 0; }
+  #photo { margin-top: 20px; border-radius: 10px; display: none; }
+  body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: linear-gradient(120deg,rgb(94, 255, 94),green);
+  }
+  #step1{
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border: 1px solid white;
+  }
+  #step1 input[type="text"], #step1 input[type="password"]{
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    width: calc(100% - 20px);
+  }
+  #step1 button{
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    background-color: white;
+    color: green;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  #step1 button:hover{
+    background-color: #f0f0f0;
+    }
+    #step1 a{
+      color: white;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    #step1 a:hover{
+      text-decoration: underline;
+    }
+    #step1 span{
+      margin-top: 10px;
+      font-size: 14px;
+      display: flex;
+        align-items: center;
+    }
+    #step1 span input[type="checkbox"]{
+      width: auto;
+      margin-right: 5px;
+      border: none;
+      background: none;
+      outline: none;
+      background-color: white;
+    }
+    #step2{
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 20px;
+      justify-content: center;
+      gap: 20px;
+    }
+    #step2 button{
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background-color: white;
+      color: green;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 0;
+    }
+    #step2 button:hover{
+      background-color: #f0f0f0;
+    }
+</style>
+</head>
+<body>
+
+<div id="step1" class="section">
+  <h2>Nhập thông tin</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <span><input type="checkbox" id="terms" required> Tôi đồng ý với các điều khoản</span>
+  <button onclick="nextStep()">Next → Chụp khuôn mặt</button>
+  <span>Bạn đã có tài khoản? <a href="login.html">Đăng nhập</a></span>
+</div>
+
+<div id="step2" class="section" style="display:none;">
+  <div style="position:relative; display:inline-block;">
+    <video id="video" width="400" height="300" autoplay muted></video>
+  </div>
+  <button id="captureBtn">📸 Chụp khuôn mặt (Space)</button>
+  <img id="photo" width="200" alt="Ảnh khuôn mặt">
+  <button onclick="submitRegister()" style="margin-top:10px;">Gửi đăng ký</button>
+</div>
+
+<script>
+const apiBase = "http://127.0.0.1:5000/api";
+const video = document.getElementById('video');
+const captureBtn = document.getElementById('captureBtn');
+const photo = document.getElementById('photo');
+let detections = [];
+let faceBase64 = "";
+
+// Bước 1 → bước 2
+function nextStep() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if(!username || !password) {
+        alert("Vui lòng nhập username + password!");
+        return;
+    }
+    document.getElementById('step1').style.display = "none";
+    document.getElementById('step2').style.display = "flex";
+    startVideo();
+}
+
+// Load face-api model
+Promise.all([
+  faceapi.nets.tinyFaceDetector.loadFromUri('https://justadudewhohacks.github.io/face-api.js/models')
+]);
+
+// Bắt camera
+function startVideo() {
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => video.srcObject = stream)
+    .catch(err => console.error('Không mở được camera:', err));
+
+  video.addEventListener('play', () => {
+    const container = video.parentElement;
+    const canvas = faceapi.createCanvasFromMedia(video);
+    container.append(canvas);
+    const displaySize = { width: video.width, height: video.height };
+    faceapi.matchDimensions(canvas, displaySize);
+
+    setInterval(async () => {
+      detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+      const resized = faceapi.resizeResults(detections, displaySize);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      faceapi.draw.drawDetections(canvas, resized);
+    }, 100);
+  });
+}
+
+// Chụp khuôn mặt
+async function captureFace() {
+    if(!detections.length){
+        alert("Không thấy khuôn mặt!");
+        return;
+    }
+    const box = detections[0].box;
+    const {x,y,width,height} = box;
+    const faceCanvas = document.createElement('canvas');
+    faceCanvas.width = width;
+    faceCanvas.height = height;
+    const ctx = faceCanvas.getContext('2d');
+    ctx.drawImage(video, x, y, width, height, 0, 0, width, height);
+    faceBase64 = faceCanvas.toDataURL('image/png').split(',')[1]; // Base64
+    photo.src = "data:image/png;base64," + faceBase64;
+    photo.style.display = "block";
+}
+captureBtn.addEventListener('click', captureFace);
+window.addEventListener('keydown', (e)=>{ if(e.code==='Space'){ e.preventDefault(); captureFace(); }});
+
+// Gửi đăng ký
+async function submitRegister() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    if(!faceBase64){
+        alert("Vui lòng chụp khuôn mặt trước khi gửi!");
+        return;
+    }
+    try{
+        const res = await fetch(`${apiBase}/register`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({username,password,img:faceBase64})
+        });
+        const data = await res.json();
+        alert(data.message || data.error);
+        if(data.message=='✅ Đăng ký thành công!'){
+            window.location.href = "login.html";
+        }
+    }catch(err){
+        console.error(err);
+        alert("Lỗi khi gửi request!");
+    }
+}
+</script>
+</body>
+</html>
