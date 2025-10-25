@@ -37,8 +37,8 @@ def register():
     # Tách Base64 nếu có prefix data:image/png;base64,
     img_str = img_data.split(",")[1] if "," in img_data else img_data
 
+    # Kiểm tra Base64 hợp lệ
     try:
-        # Kiểm tra Base64 hợp lệ
         base64.b64decode(img_str)
     except Exception:
         return jsonify({'error': 'Ảnh không hợp lệ, phải là Base64'}), 400
@@ -46,6 +46,16 @@ def register():
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
+
+        # ✅ Kiểm tra username đã tồn tại chưa
+        cursor.execute("SELECT * FROM user WHERE userName = %s", (username,))
+        existing_user = cursor.fetchone()
+        if existing_user:
+            cursor.close()
+            conn.close()
+            return jsonify({'error': 'Tên người dùng đã tồn tại, vui lòng chọn tên khác'}), 409
+
+        # Nếu chưa tồn tại thì thêm mới
         cursor.execute(
             "INSERT INTO user (userName, password, img) VALUES (%s, %s, %s)",
             (username, password, img_str)
@@ -53,9 +63,12 @@ def register():
         conn.commit()
         cursor.close()
         conn.close()
+
         return jsonify({'message': '✅ Đăng ký thành công!'}), 201
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # ========================
 # LOGIN + KIỂM TRA KHUÔN MẶT

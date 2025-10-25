@@ -109,10 +109,17 @@
   </div>
   <button id="captureBtn">📸 Chụp khuôn mặt (Space)</button>
   <img id="photo" width="200" alt="Ảnh khuôn mặt">
-  <button onclick="submitRegister()" style="margin-top:10px;">Gửi đăng ký</button>
+  <span style="display:flex; gap :10px;width: 100%;">
+    <button style="width: 100%;" id="reloadBtn">Quay lại</button>
+    <button style="width: 100%;" onclick="submitRegister()" style="margin-top:10px;">Gửi đăng ký</button>
+  </span>
+
 </div>
 
 <script>
+  document.getElementById("reloadBtn").addEventListener("click", () => {
+    window.location.reload();
+  });
 const apiBase = "http://127.0.0.1:5000/api";
 const video = document.getElementById('video');
 const captureBtn = document.getElementById('captureBtn');
