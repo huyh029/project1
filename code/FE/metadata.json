@@ -1,0 +1,7 @@
+{
+  "name": "FaceAI Secure",
+  "description": "A biometric security and analysis dashboard powered by DeepFace and Flask.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
