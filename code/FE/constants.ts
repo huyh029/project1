@@ -1,4 +1,4 @@
-export const API_BASE_URL = "http://127.0.0.1:5000";
+export const API_BASE_URL = "https://huy00001-deepFaceAPI.hf.space";
 
 export const EMOTION_COLORS: Record<string, string> = {
   angry: "text-red-500",

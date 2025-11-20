@@ -3,12 +3,14 @@ import { WebcamCapture } from '../components/WebcamCapture';
 import { apiService } from '../services/api';
 import { AnalyzeResponse, AnalysisResult } from '../types';
 import { EMOTION_COLORS } from '../constants';
-import { Loader2, ScanFace, AlertCircle, User, Smile, Users, Fingerprint } from 'lucide-react';
+import { Loader2, ScanFace, AlertCircle, User, Smile, Users, Fingerprint, Upload } from 'lucide-react';
 
 export const AnalyzeView: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [useUpload, setUseUpload] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<string>('');
 
   const handleCapture = async (img: string) => {
     if (!img) return;
@@ -25,6 +27,20 @@ export const AnalyzeView: React.FC = () => {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const base64Data = base64String.split(',')[1];
+        setUploadedImage(base64Data);
+        handleCapture(base64Data);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Helper to safely access list or object from DeepFace result
   const analysis: AnalysisResult | undefined = result?.result?.[0];
 
@@ -36,7 +52,7 @@ export const AnalyzeView: React.FC = () => {
   };
 
   return (
-    <div className= " w-full max-w-6xl mx-auto p-4">
+    <div className="w-full max-w-6xl mx-auto p-4">
       <div className="text-center mb-10 space-y-2">
         <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center gap-3">
           <ScanFace className="text-cyan-400 w-8 h-8" />
@@ -55,7 +71,82 @@ export const AnalyzeView: React.FC = () => {
               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Fingerprint className="w-4 h-4" /> Source Feed
               </h3>
-              <WebcamCapture onCapture={handleCapture} label="Scan Face Now" />
+              
+              {/* Toggle between Webcam and Upload */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => { setUseUpload(false); setUploadedImage(''); }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    !useUpload 
+                      ? 'bg-indigo-600 text-white shadow-lg' 
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  <ScanFace size={16} />
+                  Webcam
+                </button>
+                <button
+                  onClick={() => { setUseUpload(true); setUploadedImage(''); }}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    useUpload 
+                      ? 'bg-indigo-600 text-white shadow-lg' 
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  <Upload size={16} />
+                  Upload
+                </button>
+              </div>
+
+              {useUpload ? (
+                // Upload Image Section
+                <div className="space-y-3">
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="analyze-image-upload"
+                    />
+                    <label
+                      htmlFor="analyze-image-upload"
+                      className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-indigo-500 hover:bg-slate-800/50 transition-all group"
+                    >
+                      {uploadedImage ? (
+                        <div className="relative w-full h-full">
+                          <img
+                            src={`data:image/png;base64,${uploadedImage}`}
+                            alt="Uploaded"
+                            className="w-full h-full object-cover rounded-xl"
+                          />
+                          <div className="absolute top-2 right-2 bg-emerald-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            ✓ Uploaded
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center text-slate-400 group-hover:text-slate-300 transition-colors">
+                          <Upload size={48} className="mb-3" />
+                          <p className="text-sm font-medium">Click to upload image</p>
+                          <p className="text-xs mt-1">PNG, JPG up to 10MB</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                  
+                  {uploadedImage && (
+                    <button
+                      onClick={() => setUploadedImage('')}
+                      className="w-full bg-slate-700 hover:bg-slate-600 text-white font-medium py-2 rounded-lg transition-all"
+                    >
+                      Remove Image
+                    </button>
+                  )}
+                </div>
+              ) : (
+                // Webcam Capture Section
+                <WebcamCapture onCapture={handleCapture} label="Scan Face Now" />
+              )}
             </div>
           </div>
           
